@@ -1,0 +1,8 @@
+
+models/.DS_Store
+nesr/.DS_Store
+.DS_Store
+nesr/__pycache__/__init__.cpython-39.pyc
+*.pyc
+nesr/gui/.DS_Store
+/outputs
