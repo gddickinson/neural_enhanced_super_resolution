@@ -173,7 +173,24 @@ def download_file(url, destination, expected_size=None, expected_md5=None, callb
             mode = 'ab'
 
         # Start download
-        response = requests.get(url, headers=headers, stream=True, timeout=10)
+        try:
+            response = requests.get(url, headers=headers, stream=True, timeout=30)
+            response.raise_for_status()
+        except requests.ConnectionError as e:
+            logger.error(f"Network connection failed for {url}: {e}")
+            if callback:
+                callback(0, f"Network error: Could not connect to {url}")
+            return False
+        except requests.Timeout as e:
+            logger.error(f"Download timed out for {url}: {e}")
+            if callback:
+                callback(0, f"Timeout: Download took too long for {os.path.basename(destination)}")
+            return False
+        except requests.HTTPError as e:
+            logger.error(f"HTTP error {response.status_code} for {url}: {e}")
+            if callback:
+                callback(0, f"HTTP error {response.status_code} downloading {os.path.basename(destination)}")
+            return False
 
         # Get total size
         total_size = int(response.headers.get('content-length', 0)) + initial_size

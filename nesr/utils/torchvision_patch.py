@@ -1,5 +1,15 @@
 """
 Compatibility patch for torchvision to support Real-ESRGAN with newer torchvision versions.
+
+Usage:
+    Call apply_patches() before importing Real-ESRGAN or basicsr modules.
+    This is needed because newer torchvision versions removed the
+    `torchvision.transforms.functional_tensor` module that basicsr depends on.
+
+    Example:
+        from nesr.utils.torchvision_patch import apply_patches
+        apply_patches()  # Must be called before importing realesrgan/basicsr
+        from realesrgan import RealESRGANer
 """
 
 import sys
