@@ -197,7 +197,11 @@ class SuperResolutionPipeline:
 
                     if model_path is None:
                         # Download the model if it doesn't exist
-                        logger.info("ESRGAN model not found, attempting to download...")
+                        logger.info(
+                            "ESRGAN model weights not found in any of these locations:\n"
+                            + "\n".join(f"  - {p}" for p in possible_paths)
+                            + "\nAttempting to download..."
+                        )
                         os.makedirs(os.path.join(base_dir, 'models', 'weights'), exist_ok=True)
                         model_path = os.path.join(base_dir, 'models', 'weights', 'RealESRGAN_x2plus.pth')
 
@@ -474,17 +478,33 @@ class SuperResolutionPipeline:
 
         return output
 
-    def enhance_image(self, image_path, prompt=None):
+    def enhance_image(self, image_path: str, prompt: str = None) -> str:
         """
         Enhance an image through multiple iterations of super-resolution.
 
         Args:
-            image_path: Path to the input image
-            prompt: Optional text prompt to guide diffusion-based upscaling
+            image_path: Path to the input image. Supported formats: PNG, JPG, JPEG,
+                        BMP, TIFF, WEBP.
+            prompt: Optional text prompt to guide diffusion-based upscaling.
 
         Returns:
-            Path to the final enhanced image
+            Path to the final enhanced image.
+
+        Raises:
+            FileNotFoundError: If image_path does not exist.
+            ValueError: If the image cannot be loaded or has invalid dimensions.
         """
+        # Validate input path
+        if not os.path.isfile(image_path):
+            raise FileNotFoundError(f"Image file not found: {image_path}")
+
+        supported_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.webp'}
+        _, ext = os.path.splitext(image_path)
+        if ext.lower() not in supported_extensions:
+            logger.warning(
+                f"Unsupported image format '{ext}'. Supported formats: {supported_extensions}"
+            )
+
         # Load models on demand
         self._load_models()
 
@@ -494,6 +514,26 @@ class SuperResolutionPipeline:
 
         # Load the initial image
         image = self._load_image(image_path)
+
+        # Validate image dimensions
+        if image.ndim != 3 or image.shape[2] not in (3, 4):
+            raise ValueError(
+                f"Invalid image: expected 3-channel RGB or 4-channel RGBA, "
+                f"got shape {image.shape}"
+            )
+
+        min_dimension = 16
+        if image.shape[0] < min_dimension or image.shape[1] < min_dimension:
+            raise ValueError(
+                f"Image too small: minimum dimension is {min_dimension}px, "
+                f"got {image.shape[1]}x{image.shape[0]}"
+            )
+
+        # Convert RGBA to RGB if needed
+        if image.shape[2] == 4:
+            logger.info("Converting RGBA image to RGB")
+            image = image[:, :, :3]
+
         original_h, original_w = image.shape[:2]
 
         # Track the current image throughout iterations
