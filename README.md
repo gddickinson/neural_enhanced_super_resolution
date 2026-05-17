@@ -125,3 +125,7 @@ NESR typically achieves higher quality results than single-model approaches, wit
 ## License
 
 MIT
+
+
+---
+*Built with AI assistance from [Claude (Anthropic)](https://claude.com/).*
