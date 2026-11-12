@@ -6,7 +6,7 @@
 ## Core Package: nesr/
 - **nesr/__init__.py**: Package init. Applies torchvision compatibility patches, exports `SuperResolutionPipeline`.
 - **nesr/nesr.py**: `SuperResolutionPipeline` class - main orchestration for iterative super-resolution.
-  Key methods: `enhance_image()`, `_load_models()`, `_apply_esrgan()`, `_apply_diffusion()`,
+  Key methods (load failures in `model_errors`): `enhance_image()`, `_load_models()`, `_apply_esrgan()`, `_apply_diffusion()`,
   `_ensemble_results()`, `_preprocess_image()`, `_postprocess_image()`, `_segment_and_enhance()`,
   `_process_with_tiling()`.
 
@@ -35,7 +35,7 @@
 - **nesr/utils/__init__.py**: Utils subpackage init.
 - **nesr/utils/image_utils.py**: Image manipulation functions: `add_noise()`, `blur_image()`,
   `downsample_image()`, `apply_jpeg_compression()`, `create_comparison_image()`, `add_text_to_image()`.
-- **nesr/utils/downloader.py**: Model download management. `download_models()`, `download_file()`,
+- **nesr/utils/downloader.py**: Model download management (upstream URLs, sizes, SHA-256). `download_models()`, `download_file()`, `calculate_sha256()`,
   `check_models_exist()`, `get_model_info()`. Handles Real-ESRGAN weights and HuggingFace models.
 - **nesr/utils/torchvision_patch.py**: Compatibility patch for newer torchvision versions.
   Must call `apply_patches()` before importing realesrgan/basicsr.
@@ -55,6 +55,8 @@
 - **tests/test_import_without_torch.py**, **tests/test_pipeline_config.py**, **tests/test_esrgan_wiring.py**: regression
   tests for the 2026-11 fixes (the last has a real-model test that needs torch, basicsr, realesrgan).
 - **tests/test_metrics.py**: metrics vs scikit-image, test patterns.
+- **tests/test_downloader.py**: upstream URLs, sizes and SHA-256 of the Real-ESRGAN weights; hash verification (mocked requests).
+- **tests/test_segmentation_loading.py**: SegFormer loaded as semantic segmentation; load failures reported (mocked transformers).
 - **tests/test_web.py** (kit: endpoints, static build, node tests), **tests/test_web_api.py** (methods, examples, upscale,
   fixture is current).
 
