@@ -206,7 +206,7 @@ class SuperResolutionPipeline:
                         model_path = os.path.join(base_dir, 'models', 'weights', 'RealESRGAN_x2plus.pth')
 
                         import requests
-                        url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x2plus.pth"
+                        url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth"
                         response = requests.get(url, stream=True)
                         if response.status_code == 200:
                             with open(model_path, 'wb') as f:

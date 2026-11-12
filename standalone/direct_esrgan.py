@@ -217,7 +217,7 @@ def find_model_path():
         
         # Download the model
         import requests
-        url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x2plus.pth"
+        url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth"
         response = requests.get(url, stream=True)
         
         if response.status_code == 200:

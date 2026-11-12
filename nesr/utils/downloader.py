@@ -19,18 +19,18 @@ logger = logging.getLogger('nesr.downloader')
 MODELS = {
     "esrgan_x2": {
         "name": "Real-ESRGAN x2 Model",
-        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x2plus.pth",
+        "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
         "path": "weights/RealESRGAN_x2plus.pth",
-        "size": 67010191,  # Approximate size in bytes
-        "md5": "5db904e3e9f0dbf5c64b7ae665527e62",
+        "size": 67061725,  # exact size of the upstream file (checked 2026-11-12)
+        "sha256": "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb",
         "required": True
     },
     "esrgan_x4": {
         "name": "Real-ESRGAN x4 Model",
         "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
         "path": "weights/RealESRGAN_x4plus.pth",
-        "size": 67010191,  # Approximate size in bytes
-        "md5": "94df4e7c584b55e2e9a5d2b8f161860e",
+        "size": 67040989,  # exact size of the upstream file (checked 2026-11-12)
+        "sha256": "4fa0d38905f75ac06eb49a7951b426670021be3018265fd191d2125df9d682f1",
         "required": False
     },
     "sd_upscaler": {
@@ -129,7 +129,25 @@ def calculate_md5(file_path):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-def download_file(url, destination, expected_size=None, expected_md5=None, callback=None):
+def calculate_sha256(file_path):
+    """Calculate the SHA-256 hash of a file."""
+    h = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _verified(path, expected_md5=None, expected_sha256=None):
+    """True if the file matches every expected hash given (and True when none is given)."""
+    if expected_sha256 and calculate_sha256(path) != expected_sha256:
+        return False
+    if expected_md5 and calculate_md5(path) != expected_md5:
+        return False
+    return True
+
+
+def download_file(url, destination, expected_size=None, expected_md5=None, callback=None, expected_sha256=None):
     """Download a file with progress tracking.
 
     Args:
@@ -137,6 +155,7 @@ def download_file(url, destination, expected_size=None, expected_md5=None, callb
         destination: Destination file path
         expected_size: Expected file size in bytes (for progress calculation)
         expected_md5: Expected MD5 hash for verification
+        expected_sha256: Expected SHA-256 hash for verification (preferred)
         callback: Progress callback function(progress_percent, message)
 
     Returns:
@@ -154,22 +173,18 @@ def download_file(url, destination, expected_size=None, expected_md5=None, callb
         if os.path.exists(destination):
             initial_size = os.path.getsize(destination)
             if expected_size and initial_size >= expected_size:
-                # File already exists and is complete, verify hash if available
-                if expected_md5:
-                    actual_md5 = calculate_md5(destination)
-                    if actual_md5 == expected_md5:
-                        if callback:
-                            callback(100, f"File already exists and verified: {os.path.basename(destination)}")
-                        return True
-                else:
-                    # No MD5 to verify, but file exists with correct size
+                # File already exists and is complete: keep it if it verifies, otherwise download it again
+                if _verified(destination, expected_md5, expected_sha256):
                     if callback:
-                        callback(100, f"File already exists: {os.path.basename(destination)}")
+                        callback(100, f"File already exists and verified: {os.path.basename(destination)}")
                     return True
-
-            # Resume download
-            headers['Range'] = f'bytes={initial_size}-'
-            mode = 'ab'
+                logger.warning(f"{destination} exists but does not match the expected hash; downloading it again")
+                os.remove(destination)
+                initial_size = 0
+            else:
+                # Resume download
+                headers['Range'] = f'bytes={initial_size}-'
+                mode = 'ab'
 
         # Start download
         try:
@@ -224,13 +239,11 @@ def download_file(url, destination, expected_size=None, expected_md5=None, callb
                                 callback(percent, f"Downloading {desc}: {percent}%")
 
         # Verify download if MD5 is provided
-        if expected_md5:
-            actual_md5 = calculate_md5(destination)
-            if actual_md5 != expected_md5:
-                logger.error(f"MD5 verification failed for {destination}")
-                if callback:
-                    callback(0, f"Error: MD5 verification failed for {os.path.basename(destination)}")
-                return False
+        if not _verified(destination, expected_md5, expected_sha256):
+            logger.error(f"Checksum verification failed for {destination}")
+            if callback:
+                callback(0, f"Error: checksum verification failed for {os.path.basename(destination)}")
+            return False
 
         if callback:
             callback(100, f"Download complete: {os.path.basename(destination)}")
@@ -360,6 +373,7 @@ def download_models(model_keys=None, progress_callback=None):
                 destination,
                 expected_size=model_info.get('size'),
                 expected_md5=model_info.get('md5'),
+                expected_sha256=model_info.get('sha256'),
                 callback=model_progress_callback
             )
 
