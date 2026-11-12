@@ -1020,11 +1020,6 @@ class AdvancedSettings(QWidget):
         memory_group = QGroupBox("Memory Management")
         memory_layout = QVBoxLayout()
 
-        # Force 3-channel mode
-        self.force_3channel = QCheckBox("Force 3-channel mode (lower quality, less memory)")
-        memory_tips = QLabel("Recommended for larger images and Apple Silicon")
-        memory_tips.setStyleSheet("color: gray; font-style: italic;")
-
         # Enable tiling
         tiling_layout = QHBoxLayout()
         self.enable_tiling = QCheckBox("Enable tiled processing")
@@ -1041,8 +1036,6 @@ class AdvancedSettings(QWidget):
         self.memory_efficient.setChecked(False)
 
         # Add to memory layout
-        memory_layout.addWidget(self.force_3channel)
-        memory_layout.addWidget(memory_tips)
         memory_layout.addLayout(tiling_layout)
         memory_layout.addWidget(self.memory_efficient)
         memory_group.setLayout(memory_layout)
@@ -1153,7 +1146,6 @@ class AdvancedSettings(QWidget):
     def get_settings(self):
         """Get the current advanced settings as a configuration dictionary."""
         config = {
-            "force_3channel": self.force_3channel.isChecked(),
             "enable_tiling": self.enable_tiling.isChecked(),
             "max_tile_size": int(self.tile_size.currentText()),
             "memory_efficient": self.memory_efficient.isChecked(),
@@ -1620,7 +1612,6 @@ class NESRApplication(QMainWindow):
     def update_advanced_for_preset(self, preset_name):
         """Update the advanced settings based on a preset name."""
         if preset_name == "Default":
-            self.advanced_settings.force_3channel.setChecked(False)
             self.advanced_settings.enable_tiling.setChecked(True)
             self.advanced_settings.tile_size.setCurrentText("512")
             self.advanced_settings.memory_efficient.setChecked(False)
@@ -1628,7 +1619,6 @@ class NESRApplication(QMainWindow):
             self.advanced_settings.save_intermediate.setChecked(False)
 
         elif preset_name == "High Quality":
-            self.advanced_settings.force_3channel.setChecked(False)
             self.advanced_settings.enable_tiling.setChecked(True)
             self.advanced_settings.tile_size.setCurrentText("1024")
             self.advanced_settings.memory_efficient.setChecked(False)
@@ -1636,7 +1626,6 @@ class NESRApplication(QMainWindow):
             self.advanced_settings.save_intermediate.setChecked(True)
 
         elif preset_name == "Fast":
-            self.advanced_settings.force_3channel.setChecked(True)
             self.advanced_settings.enable_tiling.setChecked(True)
             self.advanced_settings.tile_size.setCurrentText("256")
             self.advanced_settings.memory_efficient.setChecked(False)
@@ -1644,7 +1633,6 @@ class NESRApplication(QMainWindow):
             self.advanced_settings.save_intermediate.setChecked(False)
 
         elif preset_name == "Apple Silicon Optimized":
-            self.advanced_settings.force_3channel.setChecked(True)
             self.advanced_settings.enable_tiling.setChecked(True)
             self.advanced_settings.tile_size.setCurrentText("512")
             self.advanced_settings.memory_efficient.setChecked(True)

@@ -45,13 +45,11 @@ class SuperResolutionPipeline:
             'progress_callback': None,
             'image_callback': None,
             # Memory management options
-            'force_3channel': False,     # Force using 3-channel mode even on smaller images
             'max_tile_size': 512,        # Maximum tile size for tiled processing
             'enable_tiling': True,       # Enable tiled processing for large images
             'memory_efficient': False,   # Use more memory-efficient but potentially slower processing
             'device_specific': {         # Device-specific configurations
                 'mps': {                 # Apple Silicon specific settings
-                    'force_3channel': True,  # MPS works better with 3-channel
                     'max_megapixels': 4,     # Max megapixels before using tiling on MPS
                     'fallback_to_cpu': True, # Fallback to CPU for unsupported operations
                 },
@@ -816,64 +814,30 @@ class SuperResolutionPipeline:
             # Use tiling if image is larger than threshold
             use_tiling = image_megapixels > megapixel_threshold
 
-        # Determine if we should use 3-channel or 12-channel mode
-        use_3channel = self.config['force_3channel']
-
-        # Automatically enable 3-channel mode for MPS on larger images
-        if self.device == 'mps' and image_megapixels > 1:
-            use_3channel = True
-            logger.info(f"Using 3-channel mode for {image_megapixels:.1f} MP image on MPS")
-
         # For very large images, enforce tiling regardless of settings
         if image_megapixels > 16:
             use_tiling = True
-            use_3channel = True
-            logger.info(f"Forcing tiling and 3-channel mode for {image_megapixels:.1f} MP image")
+            logger.info(f"Forcing tiled processing for {image_megapixels:.1f} MP image")
 
         # Get tile size from config
         tile_size = self.config['max_tile_size']
 
         try:
-            # If tiling is needed, use the tiled processing approach
             if use_tiling:
                 logger.info(f"Using tiled processing with {tile_size}x{tile_size} tiles")
-
-                # Create a processor function that will be applied to each tile
-                if use_3channel:
-                    processor = lambda tile: self._apply_esrgan_3channel(tile)
-                else:
-                    processor = lambda tile: self._apply_esrgan_12channel(tile)
-
-                # Apply the tiled processing
-                return self._process_with_tiling(processor, image, tile_size=tile_size, padding=16)
-
-            # If no tiling needed, directly apply the selected method
-            if use_3channel:
-                return self._apply_esrgan_3channel(image)
-            else:
-                return self._apply_esrgan_12channel(image)
+                return self._process_with_tiling(self._apply_esrgan_3channel, image, tile_size=tile_size, padding=16)
+            return self._apply_esrgan_3channel(image)
 
         except Exception as e:
             logger.warning(f"ESRGAN processing failed: {e}")
 
-            # Fall back to simpler method if the selected method fails
-            try:
-                # If 12-channel failed, try 3-channel
-                if not use_3channel:
-                    logger.info("Falling back to 3-channel mode")
-                    return self._apply_esrgan_3channel(image)
-
-                # If non-tiled 3-channel failed, try tiled 3-channel
-                if not use_tiling:
+            # If the whole image failed, try smaller tiles
+            if not use_tiling:
+                try:
                     logger.info("Falling back to tiled processing")
-                    return self._process_with_tiling(
-                        lambda tile: self._apply_esrgan_3channel(tile),
-                        image,
-                        tile_size=256,  # Smaller tiles for fallback
-                        padding=16
-                    )
-            except Exception as e2:
-                logger.warning(f"Fallback also failed: {e2}")
+                    return self._process_with_tiling(self._apply_esrgan_3channel, image, tile_size=256, padding=16)
+                except Exception as e2:
+                    logger.warning(f"Fallback also failed: {e2}")
 
             # If all else fails, use bicubic upscaling
             logger.warning("All ESRGAN methods failed, using bicubic upscaling")
@@ -882,11 +846,6 @@ class SuperResolutionPipeline:
                 (int(w * self.config['upscale_factor']), int(h * self.config['upscale_factor'])),
                 interpolation=cv2.INTER_CUBIC
             )
-
-    def _apply_esrgan_12channel(self, image):
-        """Kept for compatibility: the x2plus network takes a 3-channel image (it builds its 12 channels
-        internally by pixel-unshuffle), so this is the same as _apply_esrgan_3channel."""
-        return self._apply_esrgan_3channel(image)
 
     def _apply_esrgan_3channel(self, image):
         """Apply Real-ESRGAN to an RGB uint8 image with RealESRGANer.enhance (upstream usage).

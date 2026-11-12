@@ -64,8 +64,7 @@ def test_esrgan_built_and_called_as_x2(tmp_path, monkeypatch):
     assert calls["rrdb"]["num_in_ch"] == 3 and calls["rrdb"]["scale"] == 2
     assert calls["upsampler"]["scale"] == 2
     img = _image()
-    for force3 in (False, True):  # both the default ("12-channel") and the 3-channel code paths
-        p.config["force_3channel"] = force3
+    for _ in range(2):
         out = p._apply_esrgan(img)
         assert out.shape == (48, 60, 3)
         sent, outscale = calls["enhance"][-1]
@@ -94,3 +93,16 @@ def test_real_esrgan_matches_upstream_usage(tmp_path, monkeypatch):
     expected, _ = ref.enhance(img[:, :, ::-1], outscale=2)
     assert out.shape == (64, 80, 3)
     assert np.abs(out.astype(int) - expected[:, :, ::-1].astype(int)).max() <= 1
+
+
+def test_no_dead_three_channel_option():
+    """After the x2plus fix both ESRGAN 'modes' ran the same code, so the GUI's "Force 3-channel mode (lower quality,
+    less memory)" checkbox did nothing; it was removed with the config key and the 12-channel method."""
+    gui = open(os.path.join(ROOT, "nesr", "gui", "app.py"), encoding="utf-8").read()
+    assert "force_3channel" not in gui and "3-channel" not in gui
+    assert not hasattr(SuperResolutionPipeline, "_apply_esrgan_12channel")
+
+
+def test_old_configs_with_force_3channel_still_load(tmp_path):
+    p = SuperResolutionPipeline(device="cpu", config={"force_3channel": True, "output_dir": str(tmp_path)})
+    assert p.config["force_3channel"] is True  # accepted and ignored
