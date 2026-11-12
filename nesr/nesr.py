@@ -216,13 +216,14 @@ class SuperResolutionPipeline:
                         else:
                             raise ValueError(f"Failed to download model: HTTP {response.status_code}")
 
-                    # Create the model architecture
-                    model = RRDBNet(num_in_ch=12, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32)
+                    # Create the model architecture. RealESRGAN_x2plus is an RRDBNet with scale=2: the network
+                    # pixel-unshuffles the 3-channel input (hence 12 channels in its first conv) and returns 2x.
+                    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
 
-
-                    # Initialize the ESRGAN model - disable tiling to avoid tensor size issues
+                    # Initialize the ESRGAN model - disable tiling to avoid tensor size issues.
+                    # The network scale is fixed at 2; other upscale factors are reached via enhance(outscale=...).
                     self.models['esrgan'] = RealESRGANer(
-                        scale=int(self.config['upscale_factor']),  # Force integer scale
+                        scale=2,
                         model_path=model_path,
                         model=model,
                         tile=0,  # Disable tiling to avoid the size error
@@ -883,147 +884,35 @@ class SuperResolutionPipeline:
             )
 
     def _apply_esrgan_12channel(self, image):
-        """Apply Real-ESRGAN using the 12-channel input approach."""
-        import torch
-        import numpy as np
-
-        # Real-ESRGAN expects BGR format for the image
-        bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-        # Create a PyTorch tensor from the image
-        img_tensor = torch.from_numpy(np.transpose(bgr_image, (2, 0, 1))).float()
-
-        # First, normalize to [0, 1]
-        img_tensor = img_tensor / 255.0
-
-        # Create 12-channel input with variations
-        channels = []
-
-        # Original RGB
-        channels.append(img_tensor)
-
-        # Brightness variations
-        channels.append(torch.clamp(img_tensor * 1.1, 0, 1))  # Brighter
-        channels.append(torch.clamp(img_tensor * 0.9, 0, 1))  # Darker
-
-        # Add a fourth variation (e.g., slightly blurred version)
-        blurred = torch.tensor(
-            np.transpose(
-                cv2.GaussianBlur(bgr_image, (3, 3), 0),
-                (2, 0, 1)
-            )
-        ).float() / 255.0
-        channels.append(blurred)
-
-        # Combine all channels into a 12-channel tensor
-        img_12ch = torch.cat(channels, dim=0)
-
-        # Add batch dimension and move to device
-        img_12ch = img_12ch.unsqueeze(0).to(self.device)
-
-        # Use direct inference with the model
-        with torch.no_grad():
-            # Extract the model from RealESRGANer
-            model = self.models['esrgan'].model
-            model.eval()
-
-            # Forward pass through the model
-            output = model(img_12ch)
-
-            # Move back to CPU and convert to numpy
-            output = output.squeeze().cpu().numpy()
-
-            # Convert from CHW to HWC format and scale back to 0-255
-            output = np.transpose(output, (1, 2, 0)) * 255.0
-            output = np.clip(output, 0, 255).astype(np.uint8)
-
-            # Convert back to RGB
-            output_rgb = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-
-            return output_rgb
+        """Kept for compatibility: the x2plus network takes a 3-channel image (it builds its 12 channels
+        internally by pixel-unshuffle), so this is the same as _apply_esrgan_3channel."""
+        return self._apply_esrgan_3channel(image)
 
     def _apply_esrgan_3channel(self, image):
-        """Apply Real-ESRGAN using 3-channel input with channel adaptation.
+        """Apply Real-ESRGAN to an RGB uint8 image with RealESRGANer.enhance (upstream usage).
 
-        This method adapts the 3-channel input to the 12-channel model by duplicating
-        the channels to match the expected input format.
+        Returns an RGB uint8 image scaled by config['upscale_factor'] (the network itself is x2; enhance resizes
+        its output when another factor is asked for). On MPS, retries on the CPU if configured.
         """
-        import torch
-        import numpy as np
-
-        # Convert to BGR (expected by Real-ESRGAN)
-        bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
+        upsampler = self.models['esrgan']
+        bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Real-ESRGAN expects BGR
+        outscale = float(self.config['upscale_factor'])
         try:
-            # Create 3-channel tensor (normalized to [0,1])
-            img_tensor = torch.from_numpy(np.transpose(bgr_image, (2, 0, 1))).float() / 255.0
-
-            # Expand from 3 to 12 channels by repeating
-            # This is the key fix - we need to duplicate the 3 channels to create 12 channels
-            # to match the model's expected input format
-            img_12ch = torch.cat([img_tensor, img_tensor, img_tensor, img_tensor], dim=0)
-
-            # Add batch dimension and move to right device
-            img_12ch = img_12ch.unsqueeze(0).to(self.device)
-
-            # Extract model and do inference
-            model = self.models['esrgan'].model
-            model.eval()
-
-            with torch.no_grad():
-                # Process with model
-                output = model(img_12ch)
-                output = output.squeeze().cpu().numpy()
-
-                # Convert from CHW to HWC and scale back to 0-255
-                output = np.transpose(output, (1, 2, 0)) * 255.0
-                output = np.clip(output, 0, 255).astype(np.uint8)
-
-                # Convert back to RGB
-                output_rgb = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-
-                return output_rgb
-
+            output, _ = upsampler.enhance(bgr_image, outscale=outscale)
         except Exception as e:
-            logger.warning(f"Error in 3-channel ESRGAN processing: {e}")
-
-            # Try CPU fallback if configured and we're on MPS
-            if self.device == 'mps' and self.config.get('fallback_to_cpu', True):
-                try:
-                    logger.info("Trying CPU fallback for 3-channel processing")
-
-                    # Create tensor on CPU instead
-                    img_tensor = torch.from_numpy(np.transpose(bgr_image, (2, 0, 1))).float() / 255.0
-                    img_12ch = torch.cat([img_tensor, img_tensor, img_tensor, img_tensor], dim=0)
-                    img_12ch = img_12ch.unsqueeze(0)  # Keep on CPU
-
-                    # Move model temporarily to CPU
-                    model = self.models['esrgan'].model
-                    original_device = next(model.parameters()).device
-                    model = model.to('cpu')
-
-                    with torch.no_grad():
-                        # Process on CPU
-                        output = model(img_12ch)
-                        output = output.squeeze().clamp_(0, 1).numpy()
-                        output = output.transpose(1, 2, 0) * 255.0
-                        output = np.clip(output, 0, 255).astype(np.uint8)
-
-                    # Move model back to original device
-                    model = model.to(original_device)
-
-                    # Convert back to RGB
-                    output_rgb = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-
-                    return output_rgb
-
-                except Exception as cpu_err:
-                    logger.error(f"CPU fallback also failed: {cpu_err}")
-                    # Move model back in case of error
-                    model = model.to(original_device)
-
-            # If we get here, both attempts failed
-            raise
+            if not (self.device == 'mps' and self.config.get('fallback_to_cpu', True)):
+                raise
+            logger.warning(f"Error in ESRGAN processing on MPS: {e}; trying CPU fallback")
+            import torch
+            original_device = upsampler.device
+            upsampler.model.to('cpu')
+            upsampler.device = torch.device('cpu')
+            try:
+                output, _ = upsampler.enhance(bgr_image, outscale=outscale)
+            finally:
+                upsampler.model.to(original_device)
+                upsampler.device = original_device
+        return cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
 
     def _apply_diffusion(self, image, prompt):
         """Apply stable diffusion upscaling with text guidance."""
