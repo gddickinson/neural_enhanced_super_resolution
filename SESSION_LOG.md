@@ -42,3 +42,8 @@ Open points for George:
 - The `preserve_details` setting (GUI checkbox and presets) is not used by the pipeline.
 - `main.py --config file.json` always overrides the file's iterations / upscale_factor with the CLI defaults.
 - `nesr/nesr.py` (977 lines) and `nesr/gui/app.py` (1828 lines) are over the 500-line budget (pre-existing; ROADMAP item).
+
+## 2026-11-12: git history rewrite (approved by George)
+- Purged from all history with git-filter-repo and force-pushed: images/test.jpeg (photo with EXIF GPS).
+  The current tree is unchanged (identical HEAD tree before/after); commit hashes changed, so old clones must be
+  re-cloned or reset to origin. A pre-rewrite mirror backup was kept outside the repo.
