@@ -55,24 +55,28 @@ You'll also need to download model weights:
 ### Basic usage
 
 ```bash
-python -m nesr --input path/to/your/image.jpg
+python main.py --cli --input path/to/your/image.jpg
 ```
+
+Without `--cli` and `--input`, `main.py` opens the desktop GUI (PyQt5).
 
 ### Advanced options
 
 ```bash
-python -m nesr --input input.jpg --output_dir results --iterations 3 --upscale_factor 2.0 --device cuda --prompt "a highly detailed photograph" --intermediate_saves
+python main.py --cli --input input.jpg --output results/enhanced.png --iterations 3 --upscale_factor 2.0 --device cpu --prompt "a highly detailed photograph"
 ```
 
-Parameters:
-- `--input`, `-i`: Path to input image (required)
-- `--output_dir`, `-o`: Output directory (default: "outputs")
+Parameters (from `main.py`):
+- `--cli`: Run in command line mode (`--gui` opens the GUI)
+- `--input`, `-i`: Path to input image
+- `--output`, `-o`: Output image path (default: `outputs/<name>_enhanced_x<scale><ext>`)
+- `--config`, `-c`: JSON file with pipeline settings (any key of the `SuperResolutionPipeline` config, e.g.
+  `{"use_diffusion": false, "intermediate_saves": true}`)
 - `--iterations`, `-n`: Number of enhancement iterations (default: 3)
 - `--upscale_factor`, `-u`: Base upscale factor per iteration (default: 2.0)
-- `--device`, `-d`: Device to run on ("cuda" or "cpu", default: "cuda")
+- `--device`, `-d`: Device to run on ("cuda" or "cpu", default: "cuda"; falls back to MPS or CPU when CUDA is missing)
 - `--prompt`, `-p`: Text prompt for diffusion guidance
-- `--no_diffusion`: Disable diffusion-based upscaling
-- `--intermediate_saves`: Save intermediate results after each iteration
+- `--download_models`: Download the model weights and exit
 
 ### Python API
 
