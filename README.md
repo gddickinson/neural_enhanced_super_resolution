@@ -120,6 +120,38 @@ NESR typically achieves higher quality results than single-model approaches, wit
 - Natural-looking results
 - Artifact reduction
 
+## Web interface
+
+A browser front end to the same code, plus a static showcase site (GitHub Pages:
+https://gddickinson.github.io/neural_enhanced_super_resolution/).
+
+![Home](docs/img/home.png)
+
+- **Compare**: before/after slider on synthetic test patterns (zone plate, Siemens star, resolution bars, colour shapes;
+  `nesr/test_patterns.py`) shrunk by 2 or 4 and restored by nearest, bicubic, Lanczos-4, the NESR pipeline without neural
+  models, Real-ESRGAN x2plus alone, and the NESR pipeline with Real-ESRGAN.
+- **Upscale**: your own image or a pattern, in "upscale" mode or "benchmark" mode (shrink, restore, score).
+- **Metrics**: PSNR and SSIM (`nesr/metrics.py`) of every precomputed output, error and SSIM maps.
+- **Pipeline**: what each stage of `SuperResolutionPipeline` does.
+
+![Compare](docs/img/compare.png)
+![Metrics](docs/img/metrics.png)
+
+### Run the web app
+
+```bash
+pip install -r requirements-web.txt   # classical methods, pipeline without neural models, metrics
+pip install -r requirements.txt       # optional: Real-ESRGAN and the diffusion upscaler
+python run_web.py                     # http://127.0.0.1:8168 (local only)
+```
+
+In the local app every method runs in Python on your computer (models only if installed). On the static site the model
+outputs are precomputed (`python scripts/make_examples.py`, CPU), while nearest, bicubic and Lanczos (`resample.js`, an exact
+port of `cv2.resize`) and PSNR/SSIM (`metrics.js`) run in the browser; node tests check both against Python
+(`tests/fixtures/js_cases.json`, from `scripts/make_js_fixtures.py`). Build the site with `python scripts/build_static.py`.
+
+Tests: `python -m pytest -q tests` (the real Real-ESRGAN test runs only when torch, basicsr and realesrgan are installed).
+
 ## Limitations
 
 - High GPU memory requirements when using all models

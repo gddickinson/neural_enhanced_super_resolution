@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Enhanced Super-Resolution</title>
+<meta name="description" content="Iterative image super-resolution with Real-ESRGAN, a Stable Diffusion upscaler and classical pre/post-processing: before/after comparisons, bicubic and Lanczos baselines and PSNR/SSIM metrics.">
+<link rel="icon" href="static/icon.svg">
+<link rel="stylesheet" href="static/style.css">
+<link rel="stylesheet" href="static/style_app.css">
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<header class="top">
+  <a class="brand" href="#/"><span class="mark"></span>NESR</a>
+  <nav class="groups">
+    <a href="#/compare" data-nav="compare">Compare</a>
+    <a href="#/upscale" data-nav="upscale">Upscale</a>
+    <a href="#/metrics" data-nav="metrics">Metrics</a>
+    <a href="#/pipeline" data-nav="pipeline">Pipeline</a>
+    <details><summary>Docs</summary><div class="menu">
+      <a href="#/readme" data-nav="readme">README</a>
+      <a href="#/usage" data-nav="usage">Usage guide</a>
+      <a href="#/structure" data-nav="structure">Project structure</a>
+      <a href="#/about" data-nav="about">About</a>
+    </div></details>
+  </nav>
+  <div class="right"><a class="small mute" href="https://github.com/gddickinson/neural_enhanced_super_resolution" target="_blank" rel="noopener">GitHub</a></div>
+</header>
+<main id="app" tabindex="-1"></main>
+<footer class="foot">Neural Enhanced Super-Resolution · <a href="https://github.com/gddickinson/neural_enhanced_super_resolution">source on GitHub</a> · <span id="mode"></span></footer>
+<script type="module" src="static/main.js"></script>
+</body>
+</html>

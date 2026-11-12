@@ -1,0 +1,532 @@
+{
+ "size": 256,
+ "factors": [
+  2,
+  4
+ ],
+ "patterns": [
+  {
+   "id": "zone_plate",
+   "title": "Zone plate",
+   "description": "Circular zone plate: every spatial frequency up to Nyquist; aliasing shows as moire rings."
+  },
+  {
+   "id": "siemens_star",
+   "title": "Siemens star",
+   "description": "36 black and white wedges that get finer towards the centre."
+  },
+  {
+   "id": "bar_chart",
+   "title": "Resolution bars",
+   "description": "Groups of three bars with periods from 12 px down to 2 px, both orientations."
+  },
+  {
+   "id": "color_shapes",
+   "title": "Colour shapes",
+   "description": "Discs, a rotated square and thin lines on a smooth gradient."
+  }
+ ],
+ "methods": [
+  {
+   "id": "nearest",
+   "label": "Nearest neighbour",
+   "kind": "classical",
+   "description": "Each low-resolution pixel becomes a block: shows exactly what the input contains.",
+   "browser": true,
+   "short": "Nearest"
+  },
+  {
+   "id": "bicubic",
+   "label": "Bicubic",
+   "kind": "classical",
+   "description": "cv2.resize INTER_CUBIC (a = -0.75), the pipeline's own fallback when no model loads.",
+   "browser": true,
+   "short": "Bicubic"
+  },
+  {
+   "id": "lanczos",
+   "label": "Lanczos-4",
+   "kind": "classical",
+   "description": "cv2.resize INTER_LANCZOS4 (8x8 windowed sinc), used by the pipeline to align ensemble members.",
+   "browser": true,
+   "short": "Lanczos"
+  },
+  {
+   "id": "nesr_basic",
+   "label": "NESR pipeline, no neural models",
+   "kind": "pipeline",
+   "description": "enhance_image with all models off: denoise + CLAHE, bicubic x2 per iteration, adaptive sharpening.",
+   "browser": false,
+   "short": "NESR basic"
+  },
+  {
+   "id": "realesrgan",
+   "label": "Real-ESRGAN x2plus",
+   "kind": "model",
+   "description": "The pipeline's Real-ESRGAN step alone (RealESRGAN_x2plus.pth, committed in models/weights), applied once per x2.",
+   "browser": false,
+   "short": "Real-ESRGAN"
+  },
+  {
+   "id": "nesr_esrgan",
+   "label": "NESR pipeline with Real-ESRGAN",
+   "kind": "pipeline",
+   "description": "enhance_image with Real-ESRGAN: denoise + CLAHE, Real-ESRGAN x2, adaptive sharpening, per iteration.",
+   "browser": false,
+   "short": "NESR + ESRGAN"
+  }
+ ],
+ "versions": {
+  "python": "3.12.3",
+  "numpy": "1.26.4",
+  "opencv": "4.10.0",
+  "machine": "Darwin arm64",
+  "device": "cpu",
+  "torch": "2.4.1",
+  "basicsr": "1.4.2",
+  "realesrgan": "0.3.0"
+ },
+ "degradation": "downsample_image(hr, 1/factor, 'bicubic') from nesr/utils/image_utils.py",
+ "examples": [
+  {
+   "id": "zone_plate_x2",
+   "pattern": "zone_plate",
+   "title": "Zone plate",
+   "factor": 2,
+   "size": 256,
+   "lr_size": 128,
+   "hr": "zone_plate_hr.png",
+   "lr": "zone_plate_x2_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 12.466771,
+     "ssim": 0.413467,
+     "seconds": 0.0,
+     "file": "zone_plate_x2_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 12.427857,
+     "ssim": 0.317836,
+     "seconds": 0.0,
+     "file": "zone_plate_x2_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 12.113773,
+     "ssim": 0.304543,
+     "seconds": 0.0,
+     "file": "zone_plate_x2_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 10.262106,
+     "ssim": 0.313911,
+     "seconds": 0.17,
+     "models_loaded": [],
+     "file": "zone_plate_x2_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 11.460862,
+     "ssim": 0.189482,
+     "seconds": 3.08,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "zone_plate_x2_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 9.700003,
+     "ssim": 0.183217,
+     "seconds": 1.72,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "zone_plate_x2_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "zone_plate_x4",
+   "pattern": "zone_plate",
+   "title": "Zone plate",
+   "factor": 4,
+   "size": 256,
+   "lr_size": 64,
+   "hr": "zone_plate_hr.png",
+   "lr": "zone_plate_x4_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 9.580298,
+     "ssim": 0.05338,
+     "seconds": 0.0,
+     "file": "zone_plate_x4_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 10.07753,
+     "ssim": 0.087263,
+     "seconds": 0.0,
+     "file": "zone_plate_x4_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 9.8754,
+     "ssim": 0.083264,
+     "seconds": 0.0,
+     "file": "zone_plate_x4_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 8.080853,
+     "ssim": 0.07463,
+     "seconds": 0.09,
+     "models_loaded": [],
+     "file": "zone_plate_x4_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 9.86434,
+     "ssim": 0.048703,
+     "seconds": 1.61,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "zone_plate_x4_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 8.423565,
+     "ssim": 0.042311,
+     "seconds": 1.62,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "zone_plate_x4_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "siemens_star_x2",
+   "pattern": "siemens_star",
+   "title": "Siemens star",
+   "factor": 2,
+   "size": 256,
+   "lr_size": 128,
+   "hr": "siemens_star_hr.png",
+   "lr": "siemens_star_x2_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 19.811495,
+     "ssim": 0.897641,
+     "seconds": 0.0,
+     "file": "siemens_star_x2_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 22.885257,
+     "ssim": 0.931543,
+     "seconds": 0.0,
+     "file": "siemens_star_x2_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 22.932067,
+     "ssim": 0.885777,
+     "seconds": 0.0,
+     "file": "siemens_star_x2_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 22.043667,
+     "ssim": 0.841004,
+     "seconds": 0.05,
+     "models_loaded": [],
+     "file": "siemens_star_x2_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 25.894845,
+     "ssim": 0.895215,
+     "seconds": 1.09,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "siemens_star_x2_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 22.976165,
+     "ssim": 0.864454,
+     "seconds": 1.13,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "siemens_star_x2_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "siemens_star_x4",
+   "pattern": "siemens_star",
+   "title": "Siemens star",
+   "factor": 4,
+   "size": 256,
+   "lr_size": 64,
+   "hr": "siemens_star_hr.png",
+   "lr": "siemens_star_x4_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 14.514273,
+     "ssim": 0.697268,
+     "seconds": 0.0,
+     "file": "siemens_star_x4_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 17.105416,
+     "ssim": 0.748083,
+     "seconds": 0.0,
+     "file": "siemens_star_x4_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 17.022065,
+     "ssim": 0.659232,
+     "seconds": 0.0,
+     "file": "siemens_star_x4_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 14.592303,
+     "ssim": 0.623859,
+     "seconds": 0.08,
+     "models_loaded": [],
+     "file": "siemens_star_x4_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 17.191927,
+     "ssim": 0.751798,
+     "seconds": 1.62,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "siemens_star_x4_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 14.013152,
+     "ssim": 0.621315,
+     "seconds": 1.58,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "siemens_star_x4_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "bar_chart_x2",
+   "pattern": "bar_chart",
+   "title": "Resolution bars",
+   "factor": 2,
+   "size": 256,
+   "lr_size": 128,
+   "hr": "bar_chart_hr.png",
+   "lr": "bar_chart_x2_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 27.898842,
+     "ssim": 0.968957,
+     "seconds": 0.0,
+     "file": "bar_chart_x2_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 24.144286,
+     "ssim": 0.918261,
+     "seconds": 0.0,
+     "file": "bar_chart_x2_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 23.300236,
+     "ssim": 0.845717,
+     "seconds": 0.0,
+     "file": "bar_chart_x2_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 24.724886,
+     "ssim": 0.93702,
+     "seconds": 0.06,
+     "models_loaded": [],
+     "file": "bar_chart_x2_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 26.836109,
+     "ssim": 0.929355,
+     "seconds": 1.22,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "bar_chart_x2_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 24.841486,
+     "ssim": 0.953276,
+     "seconds": 1.29,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "bar_chart_x2_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "bar_chart_x4",
+   "pattern": "bar_chart",
+   "title": "Resolution bars",
+   "factor": 4,
+   "size": 256,
+   "lr_size": 64,
+   "hr": "bar_chart_hr.png",
+   "lr": "bar_chart_x4_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 21.373047,
+     "ssim": 0.90603,
+     "seconds": 0.0,
+     "file": "bar_chart_x4_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 17.859459,
+     "ssim": 0.711141,
+     "seconds": 0.0,
+     "file": "bar_chart_x4_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 17.695181,
+     "ssim": 0.677655,
+     "seconds": 0.0,
+     "file": "bar_chart_x4_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 17.462487,
+     "ssim": 0.801124,
+     "seconds": 0.07,
+     "models_loaded": [],
+     "file": "bar_chart_x4_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 17.700518,
+     "ssim": 0.817316,
+     "seconds": 2.08,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "bar_chart_x4_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 13.787931,
+     "ssim": 0.718697,
+     "seconds": 1.92,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "bar_chart_x4_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "color_shapes_x2",
+   "pattern": "color_shapes",
+   "title": "Colour shapes",
+   "factor": 2,
+   "size": 256,
+   "lr_size": 128,
+   "hr": "color_shapes_hr.png",
+   "lr": "color_shapes_x2_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 26.939868,
+     "ssim": 0.959114,
+     "seconds": 0.0,
+     "file": "color_shapes_x2_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 29.5707,
+     "ssim": 0.970337,
+     "seconds": 0.0,
+     "file": "color_shapes_x2_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 29.53783,
+     "ssim": 0.964511,
+     "seconds": 0.0,
+     "file": "color_shapes_x2_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 21.579203,
+     "ssim": 0.897603,
+     "seconds": 0.06,
+     "models_loaded": [],
+     "file": "color_shapes_x2_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 30.31739,
+     "ssim": 0.95782,
+     "seconds": 1.5,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "color_shapes_x2_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 21.638696,
+     "ssim": 0.911461,
+     "seconds": 1.25,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "color_shapes_x2_nesr_esrgan.png"
+    }
+   }
+  },
+  {
+   "id": "color_shapes_x4",
+   "pattern": "color_shapes",
+   "title": "Colour shapes",
+   "factor": 4,
+   "size": 256,
+   "lr_size": 64,
+   "hr": "color_shapes_hr.png",
+   "lr": "color_shapes_x4_lr.png",
+   "outputs": {
+    "nearest": {
+     "psnr": 21.661749,
+     "ssim": 0.883732,
+     "seconds": 0.0,
+     "file": "color_shapes_x4_nearest.png"
+    },
+    "bicubic": {
+     "psnr": 23.038346,
+     "ssim": 0.892941,
+     "seconds": 0.0,
+     "file": "color_shapes_x4_bicubic.png"
+    },
+    "lanczos": {
+     "psnr": 23.111247,
+     "ssim": 0.874187,
+     "seconds": 0.0,
+     "file": "color_shapes_x4_lanczos.png"
+    },
+    "nesr_basic": {
+     "psnr": 14.590143,
+     "ssim": 0.693526,
+     "seconds": 0.08,
+     "models_loaded": [],
+     "file": "color_shapes_x4_nesr_basic.png"
+    },
+    "realesrgan": {
+     "psnr": 20.943148,
+     "ssim": 0.873189,
+     "seconds": 1.54,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "color_shapes_x4_realesrgan.png"
+    },
+    "nesr_esrgan": {
+     "psnr": 15.011717,
+     "ssim": 0.751476,
+     "seconds": 1.53,
+     "models_loaded": [
+      "esrgan"
+     ],
+     "file": "color_shapes_x4_nesr_esrgan.png"
+    }
+   }
+  }
+ ]
+}

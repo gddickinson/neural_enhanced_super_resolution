@@ -1,0 +1,12 @@
+# Web interface and static-site build (pinned). Classical methods, the NESR pipeline without neural models,
+# metrics and the static build need only these; Real-ESRGAN / diffusion in the local app need requirements.txt too.
+fastapi==0.162.2
+httpx==0.28.1
+pytest==9.2.0
+uvicorn==0.54.0
+python-multipart==0.0.33
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+requests==2.32.3
+tqdm==4.66.5
+scikit-image==0.24.0
