@@ -64,6 +64,7 @@ async function show(r) {
     <p class="small mute">${esc(r.source)} · input ${r.input_size.join(' × ')} → output ${r.output_size.join(' × ')} px ·
       ${esc(r.info.label)}${r.info.device ? ' on ' + esc(r.info.device) : ''}${r.info.models_loaded ? ' · models loaded: ' + esc(r.info.models_loaded.join(', ') || 'none (bicubic fallback)') : ''}
       ${r.info.where ? ' · ' + esc(r.info.where) : ''}</p>
+    ${r.info.model_errors ? `<p class="err small">Not loaded: ${esc(Object.entries(r.info.model_errors).map(([k, v]) => k + ' (' + v + ')').join('; '))}</p>` : ''}
     ${m ? `<div class="tiles"><div class="tile"><b>${fmtPsnr(m.psnr)}</b><span>PSNR (dB) vs your original</span></div>
       <div class="tile"><b>${fmtSsim(m.ssim)}</b><span>SSIM vs your original</span></div></div>` : ''}
     ${r.metrics_note ? `<p class="small mute">${esc(r.metrics_note)}</p>` : ''}

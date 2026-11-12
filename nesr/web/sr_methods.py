@@ -134,6 +134,8 @@ def run(method, image, scale, device="auto"):
         else:
             out = _enhance(p, image, iterations)
         info["models_loaded"] = sorted(k for k in p.models if not k.endswith("_extractor"))
+        if p.model_errors:
+            info["model_errors"] = dict(p.model_errors)
     info["seconds"] = round(time.time() - t0, 2)
     return out, info
 

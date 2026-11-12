@@ -79,6 +79,7 @@ class SuperResolutionPipeline:
 
         # Initialize models
         self.models = {}
+        self.model_errors = {}  # model name -> why it could not be loaded (also logged as a warning)
         self._init_models()
 
     def _determine_device(self, requested_device='auto'):
@@ -234,6 +235,7 @@ class SuperResolutionPipeline:
 
                 except ImportError as e:
                     logger.warning(f"Real-ESRGAN import error: {e}")
+                    self.model_errors['esrgan'] = f"not installed ({e}); pip install realesrgan basicsr"
                     logger.warning("Install with: pip install realesrgan basicsr")
                     raise
                 except Exception as e:
@@ -242,6 +244,7 @@ class SuperResolutionPipeline:
 
             except Exception as e:
                 logger.error(f"Error loading Real-ESRGAN model: {e}")
+                self.model_errors.setdefault('esrgan', f"failed to load: {e}")
 
         # Load diffusion model if enabled and requested
         if self.config['use_diffusion'] and 'diffusion' not in self.models:
@@ -280,36 +283,32 @@ class SuperResolutionPipeline:
 
                 except ImportError:
                     logger.warning("Diffusers import failed. Install with: pip install diffusers transformers")
+                    self.model_errors['diffusion'] = "not installed; pip install diffusers transformers"
                     self.config['use_diffusion'] = False
             except Exception as e:
                 logger.error(f"Error loading Stable Diffusion upscaler: {e}")
+                self.model_errors['diffusion'] = f"failed to load: {e}"
                 self.config['use_diffusion'] = False
 
-        # Load segmentation model if enabled
+        # Load segmentation model if enabled. SegFormer is a semantic-segmentation model, so it is loaded with
+        # AutoModelForSemanticSegmentation (AutoModelForImageSegmentation does not accept a SegformerConfig).
         if self.config['segment_enhancement'] and 'segmentation' not in self.models:
+            model_id = "nvidia/segformer-b0-finetuned-ade-512-512"
             try:
                 logger.info("Loading segmentation model for targeted enhancement...")
-                try:
-                    import torch
-                    from transformers import AutoFeatureExtractor, AutoModelForImageSegmentation
-
-                    # Get appropriate device
-                    device = self.device
-
-                    self.models['segmentation'] = AutoModelForImageSegmentation.from_pretrained(
-                        "nvidia/segformer-b0-finetuned-ade-512-512"
-                    ).to(device)
-                    self.models['segmentation_extractor'] = AutoFeatureExtractor.from_pretrained(
-                        "nvidia/segformer-b0-finetuned-ade-512-512"
-                    )
-                    logger.info("Segmentation model loaded successfully")
-                except ImportError:
-                    logger.warning("Transformers import failed. Install with: pip install transformers")
-                    self.config['segment_enhancement'] = False
+                from transformers import AutoImageProcessor, AutoModelForSemanticSegmentation
+                model = AutoModelForSemanticSegmentation.from_pretrained(model_id).to(self.device)
+                model.eval()
+                self.models['segmentation'] = model
+                self.models['segmentation_extractor'] = AutoImageProcessor.from_pretrained(model_id)
+                logger.info("Segmentation model loaded successfully")
+            except ImportError as e:
+                self.model_errors['segmentation'] = f"not installed ({e}); pip install transformers"
             except Exception as e:
-                logger.error(f"Error loading segmentation model: {e}")
+                self.model_errors['segmentation'] = f"failed to load {model_id}: {type(e).__name__}: {e}"
+            if 'segmentation' in self.model_errors:
+                logger.warning(f"Segmentation-guided enhancement disabled: {self.model_errors['segmentation']}")
                 self.config['segment_enhancement'] = False
-
 
     def _process_with_tiling(self, processor_func, image, tile_size=512, padding=10):
         """
@@ -506,6 +505,12 @@ class SuperResolutionPipeline:
 
         # Load models on demand
         self._load_models()
+
+        # Report models that were requested but could not be loaded
+        for name, why in self.model_errors.items():
+            logger.warning(f"Model '{name}' unavailable: {why}")
+            if self.config.get('progress_callback'):
+                self.config['progress_callback']("Models", 0, self.config['iterations'], f"{name} unavailable: {why}")
 
         # Check if any models were loaded
         if not self.models:
