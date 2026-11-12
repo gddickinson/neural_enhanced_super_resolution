@@ -73,7 +73,7 @@ class SuperResolutionPipeline:
             device_config = self.config['device_specific'][self.device]
             for key, value in device_config.items():
                 # Only set if not explicitly overridden in user config
-                if key not in config:
+                if key not in (config or {}):
                     self.config[key] = value
 
         # Create output directory if it doesn't exist
