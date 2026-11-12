@@ -16,9 +16,8 @@ Each enhancement iteration can increase resolution while preserving and enhancin
 ## Features
 
 - Multi-stage iterative enhancement
-- Model ensemble for better results than any single approach
+- Model ensemble (equal-weight average of the Real-ESRGAN and diffusion outputs)
 - Content-aware processing through segmentation
-- Detail preservation techniques
 - Guided upscaling using text prompts
 - Configurable pipeline with sensible defaults
 
@@ -123,11 +122,29 @@ print(f"Enhanced image saved to: {enhanced_image_path}")
 
 ## Results
 
-NESR typically achieves higher quality results than single-model approaches, with particularly noticeable improvements in:
-- Texture detail
-- Edge sharpness
-- Natural-looking results
-- Artifact reduction
+Measured on four synthetic 256 x 256 test patterns (`nesr/test_patterns.py`), each shrunk by 2 or 4 with
+`downsample_image(..., 'bicubic')` and restored; scores against the original pattern (PSNR in dB / SSIM, higher is
+better, best per row in bold). Produced by `scripts/make_examples.py` on CPU (torch 2.4.1, basicsr 1.4.2,
+realesrgan 0.3.0, OpenCV 4.10); the full table is in `nesr/web/static/examples/examples.json`.
+
+| Pattern | Factor | Nearest | Bicubic | Lanczos | NESR basic | Real-ESRGAN | NESR + ESRGAN |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Zone plate | x2 | **12.47** / **0.413** | 12.43 / 0.318 | 12.11 / 0.305 | 10.26 / 0.314 | 11.46 / 0.189 | 9.70 / 0.183 |
+| Zone plate | x4 | 9.58 / 0.053 | **10.08** / **0.087** | 9.88 / 0.083 | 8.08 / 0.075 | 9.86 / 0.049 | 8.42 / 0.042 |
+| Siemens star | x2 | 19.81 / 0.898 | 22.89 / **0.932** | 22.93 / 0.886 | 22.04 / 0.841 | **25.89** / 0.895 | 22.98 / 0.864 |
+| Siemens star | x4 | 14.51 / 0.697 | 17.11 / 0.748 | 17.02 / 0.659 | 14.59 / 0.624 | **17.19** / **0.752** | 14.01 / 0.621 |
+| Resolution bars | x2 | **27.90** / **0.969** | 24.14 / 0.918 | 23.30 / 0.846 | 24.72 / 0.937 | 26.84 / 0.929 | 24.84 / 0.953 |
+| Resolution bars | x4 | **21.37** / **0.906** | 17.86 / 0.711 | 17.70 / 0.678 | 17.46 / 0.801 | 17.70 / 0.817 | 13.79 / 0.719 |
+| Colour shapes | x2 | 26.94 / 0.959 | 29.57 / **0.970** | 29.54 / 0.965 | 21.58 / 0.898 | **30.32** / 0.958 | 21.64 / 0.911 |
+| Colour shapes | x4 | 21.66 / 0.884 | 23.04 / **0.893** | **23.11** / 0.874 | 14.59 / 0.694 | 20.94 / 0.873 | 15.01 / 0.751 |
+- *NESR basic*: `enhance_image` with no neural models (denoising + CLAHE, bicubic x2 per iteration, adaptive sharpening).
+- *Real-ESRGAN*: the pipeline's RealESRGAN_x2plus step alone, once per x2.
+- *NESR + ESRGAN*: `enhance_image` with Real-ESRGAN, without diffusion or segmentation.
+
+On these patterns the pipeline's pre- and post-processing lowers PSNR and SSIM compared with bicubic in most rows, and
+Real-ESRGAN alone has the best PSNR in 3 of 8 rows. The default configuration with the Stable Diffusion upscaler and
+segmentation has not been measured. Synthetic patterns are an unusual test (Real-ESRGAN was trained on photographs), so
+these numbers say nothing about photographs; no photographic benchmark has been run.
 
 ## Web interface
 
