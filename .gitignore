@@ -8,3 +8,5 @@ nesr/gui/.DS_Store
 /outputs
 /site/
 **/.DS_Store
+# personal photo (EXIF GPS, third-party mural): kept out of the repo
+/images/test.jpeg

@@ -60,6 +60,15 @@ python main.py --cli --input path/to/your/image.jpg
 
 Without `--cli` and `--input`, `main.py` opens the desktop GUI (PyQt5).
 
+No sample photo ships with the repo. To try it on a synthetic test pattern (formula-generated, no licence questions):
+
+```bash
+python -c "import cv2; from nesr.test_patterns import make_pattern; cv2.imwrite('siemens_star.png', make_pattern('siemens_star', 256))"
+python main.py --cli --input siemens_star.png --iterations 1 --device cpu
+```
+
+Patterns: `zone_plate`, `siemens_star`, `bar_chart`, `color_shapes` (see `nesr/test_patterns.py`).
+
 ### Advanced options
 
 ```bash
