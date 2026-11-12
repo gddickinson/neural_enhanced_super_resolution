@@ -11,7 +11,6 @@ import logging
 import requests
 from pathlib import Path
 from tqdm import tqdm
-import torch
 
 # Set up logging
 logger = logging.getLogger('nesr.downloader')
